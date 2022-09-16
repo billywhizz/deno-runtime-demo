@@ -1,5 +1,6 @@
 use deno_core::op;
 use deno_core::Extension;
+use deno_core::Snapshot;
 use deno_core::error::AnyError;
 use std::rc::Rc;
 use v_htmlescape::escape;
@@ -64,14 +65,8 @@ fn op_write_string_sync(
   rc
 }
 
-#[op(v8)]
-fn op_encode<'a>(
-  scope: &mut v8::HandleScope<'a>,
-  text: serde_v8::Value<'a>,
-) -> Result<serde_v8::Value<'a>, Error> {
-
-}
-
+static RUNJS_SNAPSHOT: &[u8] =
+      include_bytes!(concat!(env!("OUT_DIR"), "/RUNJS_SNAPSHOT.bin"));
 async fn run_js(file_path: &str) -> Result<(), AnyError> {
   let main_module = deno_core::resolve_path(file_path)?;
   let runjs_extension = Extension::builder()
@@ -86,6 +81,7 @@ async fn run_js(file_path: &str) -> Result<(), AnyError> {
   let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
     module_loader: Some(Rc::new(deno_core::FsModuleLoader)),
     extensions: vec![runjs_extension],
+    startup_snapshot: Some(Snapshot::Static(&*RUNJS_SNAPSHOT)),
     ..Default::default()
   });
   const RUNTIME_JAVASCRIPT_CORE: &str = include_str!("./runtime.js");

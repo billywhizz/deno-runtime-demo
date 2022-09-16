@@ -21,7 +21,6 @@ const O_RDWR = 2
 
 const fd = runjs.open('/dev/null', O_WRONLY)
 
-
 //runjs.write(2, payload, payload.length)
 //runjs.writeString(2, resp, resp.length)
 
