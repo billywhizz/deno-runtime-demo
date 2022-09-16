@@ -13,18 +13,14 @@ function bench (query) {
   if (--total) queueMicrotask(() => bench(query))
 }
 
-let total = 10
-const count = 1000000
+let total = 5
+const count = 10000000
 const O_RDONLY = 0
 const O_WRONLY = 1
 const O_RDWR = 2
 
 const fd = runjs.open('/dev/null', O_WRONLY)
-
-
-//runjs.write(2, payload, payload.length)
-//runjs.writeString(2, resp, resp.length)
-
 bench(() => runjs.write(fd, payload, payload.length))
+//bench(() => runjs.writeSlow(fd, payload, payload.length))
 //bench(() => runjs.writeString(fd, resp, resp.length))
-
+//bench(() => runjs.writeStringv8(fd, resp, resp.length))

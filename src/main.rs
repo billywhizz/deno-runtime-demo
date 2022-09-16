@@ -1,5 +1,8 @@
 use deno_core::op;
 use deno_core::Extension;
+use deno_core::Snapshot;
+use deno_core::serde_v8;
+use deno_core::v8;
 use deno_core::error::AnyError;
 use std::rc::Rc;
 use v_htmlescape::escape;
@@ -55,6 +58,28 @@ fn op_write_sync(
 }
 
 #[op]
+fn op_write_sync_slow(
+  fd: i32,
+  bytes: &[u8],
+  size: u32,
+) -> i32 {
+  let rc = unsafe { write(fd, bytes.as_ptr(), size) };
+  rc
+}
+
+#[op(v8)]
+fn op_write_string_sync_v8(
+  scope: &mut v8::HandleScope,
+  fd: i32,
+  str: serde_v8::Value,
+  size: u32,
+) -> i32 {
+  let s = v8::Local::<v8::String>::try_from(str.v8_value).unwrap();
+  let rc = unsafe { write(fd, s.to_rust_string_lossy(scope).as_ptr(), size) };
+  rc
+}
+
+#[op]
 fn op_write_string_sync(
   fd: i32,
   str: String,
@@ -64,13 +89,8 @@ fn op_write_string_sync(
   rc
 }
 
-#[op(v8)]
-fn op_encode<'a>(
-  scope: &mut v8::HandleScope<'a>,
-  text: serde_v8::Value<'a>,
-) -> Result<serde_v8::Value<'a>, Error> {
-
-}
+static RUNJS_SNAPSHOT: &[u8] =
+      include_bytes!(concat!(env!("OUT_DIR"), "/RUNJS_SNAPSHOT.bin"));
 
 async fn run_js(file_path: &str) -> Result<(), AnyError> {
   let main_module = deno_core::resolve_path(file_path)?;
@@ -78,14 +98,17 @@ async fn run_js(file_path: &str) -> Result<(), AnyError> {
     .ops(vec![
       op_escape::decl(),
       op_write_sync::decl(),
+      op_write_sync_slow::decl(),
       op_open_sync::decl(),
       op_close_sync::decl(),
-      op_write_string_sync::decl()
+      op_write_string_sync::decl(),
+      op_write_string_sync_v8::decl()
     ])
     .build();
   let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
     module_loader: Some(Rc::new(deno_core::FsModuleLoader)),
     extensions: vec![runjs_extension],
+    startup_snapshot: Some(Snapshot::Static(&*RUNJS_SNAPSHOT)),
     ..Default::default()
   });
   const RUNTIME_JAVASCRIPT_CORE: &str = include_str!("./runtime.js");
