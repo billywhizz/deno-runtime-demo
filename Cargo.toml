@@ -1,0 +1,24 @@
+[package]
+name = "runjs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+deno_core = "0.151.0"
+deno_ops = "0.29.0"
+tokio = { version = "1.19.2", features = ["full"] }
+v_htmlescape = "0.15.8"
+
+[profile.release]
+codegen-units = 1
+incremental = true
+lto = true
+opt-level = 3
+
+[profile.perf]
+inherits = "release"
+lto = "off"
+debug = true
+debug-assertions = false
