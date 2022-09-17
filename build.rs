@@ -6,8 +6,6 @@ use std::path::PathBuf;
 use std::env;
 
 fn main() {
-  println!("cargo:rustc-env=TARGET={}", env::var("TARGET").unwrap());
-  println!("cargo:rustc-env=PROFILE={}", env::var("PROFILE").unwrap());
   let o = PathBuf::from(env::var_os("OUT_DIR").unwrap());
   let snapshot_path = o.join("RUNJS_SNAPSHOT.bin");
   let mut js_runtime = JsRuntime::new(RuntimeOptions {
@@ -24,6 +22,5 @@ fn main() {
   });
   let snapshot = js_runtime.snapshot();
   let snapshot_slice: &[u8] = &*snapshot;
-  println!("Snapshot size: {}", snapshot_slice.len());
   std::fs::write(&snapshot_path, snapshot_slice).unwrap();
 }
